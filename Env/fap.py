@@ -1,16 +1,18 @@
 import numpy as np
 from numpy import random
+import utils.general_func as gfunc
 
 
 class FAP:
-    def __init__(self, fap_id, capacity, skewness, content_cnt):
+    def __init__(self, fap_id: int, capacity: int, skewness: float, plateau: float, content_cnt: int):
         self.fap_id = fap_id
         self.capacity = capacity
         self.skewness = skewness
-        self.cache = np.zeros(dtype=float)
+        self.plateau = plateau
+        self.cache = np.zeros(0,dtype=int)
         self.cache_set = set()  # 文件集合
-        self.fileNum = content_cnt
-        self.co_faplist = None
+        self.content_cnt = content_cnt
+        self.co_faplist = list()
         # 0表示本地服务， 1表示协作， 2表示从中心获取
         self.srv_type = (0, 1, 2)
 
@@ -45,7 +47,7 @@ class FAP:
         self.cache = np.sort(self.cache)
 
     def get_request(self):
-        req_contentId = np.random.zipf(self.skewness, self.fileNum)
+        req_contentId = gfunc.Mzipf(np.float64(self.skewness), np.float64(self.plateau), np.uint(1), np.uint(self.content_cnt))
         return req_contentId
 
     def add_co_fap(self, fap):
