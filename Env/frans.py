@@ -17,7 +17,7 @@ class FRANs:
     plateau                 float   zipf分布平滑函数
     delay_threshold         tuple   延迟容忍度门限值元组，这里设定三个段位
     srv_avg_delay           tuple   不同服务类型的基准值（即正态分布的平均值）
-    content_threshold_dic   dic     记录每个文件的门限值
+    content_threshold_dic   dic     记录每个文件的延迟门限值
     """
 
     def __init__(self, fap_cnt: int, cluster_size: int, content_cnt: int, fap_capacity: int,
@@ -26,7 +26,7 @@ class FRANs:
                  srv_avg_delay: tuple):
         self.fap_cnt = fap_cnt
         self.fap_list = dict()
-        self.content_threshold_dic = dict()  # 记录每个文件的延迟敏感度
+        self.content_threshold_dic = dict()
         self.cluster_size = cluster_size
         self.content_cnt = content_cnt
         self.fap_capacity = fap_capacity
@@ -37,13 +37,17 @@ class FRANs:
         self.plateau = plateau
         self.delay_threshold = delay_threshold
         self.srv_avg_delay = srv_avg_delay
-        self.delay_threshold_proportion = (0.15, 0.4)
 
+        #以下后续可以考虑可以再函数入参中配置
+        self.delay_threshold_proportion = (0.15, 0.4)
+        self.srv_delay_scale = 0.2
+        self.delay_sd = 1
+
+        #以下是需要调用函数初始化的属性
         self.gen_faplist(fap_cnt, cluster_size, content_cnt, fap_capacity, is_non_iid, skw_base, skw_sd, skw_scale,
                          plateau)
-        self.set_delay_threshold()
-
-        self.srv_delay_scale = 0.2
+        self.set_contents_delay_threshold()
+        self.timeout_probility_array = self.gen_timeout_probility_array(delay_threshold,srv_avg_delay, self.srv_delay_scale, self.delay_sd)
 
     def gen_faplist(self, fap_cnt, cluster_size, content_cnt, fap_capacity, is_non_iid, skw_base, skw_sd, skw_scale,
                     plateau):
@@ -77,7 +81,20 @@ class FRANs:
             for j in range(1, pre + 1):
                 self.fap_list[i].add_co_fap(self.fap_list[(i - j + self.fap_cnt - 1) % self.fap_cnt + 1])
 
-    def set_delay_threshold(self):
+    # 生成超时概率矩阵
+    def gen_timeout_probility_array(self, delay_threshold: tuple,srv_avg_delay: tuple, scale: float, sd: float):
+        timeout_probility_array = np.zeros(shape=(len(srv_avg_delay),len(delay_threshold)),dtype=float)
+        # timeout_probility_array[i][j] 表示 srv_avg_delay 的第i种服务类型对应delay_threshold种第j种门限的超时概率
+        for i in range(0,timeout_probility_array.shape[0]):
+            for j in range(0,timeout_probility_array.shape[1]):
+                mean = sum(srv_avg_delay[0:i+1])
+                timeout_probility = 1 - gfunc.get_truncated_normal_probility(mean, sd, mean-scale,
+                mean+scale, delay_threshold[j])
+                timeout_probility_array[i][j] = timeout_probility
+        return timeout_probility_array
+
+    # 随机的为内容分配延迟敏感度的值, 这个是每个内容的固有属性，可以是为环境的值
+    def set_contents_delay_threshold(self):
         for i in range(1, self.fap_capacity + 1):
             a = np.random.rand()
             if a < self.delay_threshold_proportion[0]:
@@ -97,7 +114,7 @@ class FRANs:
 
     def get_realtime_delay(self, srv_type: int):
         delay_gen = gfunc.get_truncated_normal(mean=self.srv_avg_delay[0],
-                                               sd=1,
+                                               sd=self.delay_sd,
                                                low=self.srv_avg_delay[0] - self.srv_delay_scale,
                                                upp=self.srv_avg_delay[0] + self.srv_delay_scale)
         if srv_type == 0:
@@ -125,6 +142,12 @@ class FRANs:
             state = np.append(state, state_fap_i)
         return state
 
+    '''
+    下面定义frans中的延迟函数
+    get_fap_avg_delay： 基于单个fap的维度的延迟的期望
+    get_cluster_avg_delay： 基于一个fap所属的簇的延迟的期望
+    get_frans_avg_delay：全局的延迟的期望
+    '''
     def get_fap_avg_delay(self, fap: FAP):
         avg_delay = 0
         for i in range (1, self.content_cnt+1):
