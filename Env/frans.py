@@ -21,11 +21,14 @@ class FRANs:
     """
 
     def __init__(self, fap_cnt: int, cluster_size: int, content_cnt: int, fap_capacity: int,
-                 is_non_iid: bool, skw_base: float, skw_sd: float, skw_scale:float, plateau: float, delay_threshold: tuple,
+                 is_non_iid: bool, skw_base: float, skw_sd: float, skw_scale: float, plateau: float,
+                 delay_threshold: tuple,
                  srv_avg_delay: tuple):
         self.fap_cnt = fap_cnt
         self.fap_list = dict()
         self.content_threshold_dic = dict()  # 记录每个文件的延迟敏感度
+        self.cluster_size = cluster_size
+        self.content_cnt = content_cnt
         self.fap_capacity = fap_capacity
         self.is_non_iid = is_non_iid
         self.skw_base = skw_base
@@ -36,10 +39,14 @@ class FRANs:
         self.srv_avg_delay = srv_avg_delay
         self.delay_threshold_proportion = (0.15, 0.4)
 
-        self.gen_faplist(fap_cnt, cluster_size, content_cnt, fap_capacity, is_non_iid, skw_base, skw_sd, skw_scale, plateau)
+        self.gen_faplist(fap_cnt, cluster_size, content_cnt, fap_capacity, is_non_iid, skw_base, skw_sd, skw_scale,
+                         plateau)
         self.set_delay_threshold()
 
-    def gen_faplist(self, fap_cnt, cluster_size, content_cnt, fap_capacity, is_non_iid, skw_base, skw_sd, skw_scale, plateau):
+        self.srv_delay_scale = 0.2
+
+    def gen_faplist(self, fap_cnt, cluster_size, content_cnt, fap_capacity, is_non_iid, skw_base, skw_sd, skw_scale,
+                    plateau):
 
         # 生成fap列表
         if not is_non_iid:
@@ -47,11 +54,12 @@ class FRANs:
                 fap = FAP(i, fap_capacity, skw_base, plateau, content_cnt)
                 self.fap_list[i] = fap
         else:
-            if skw_scale/2 >= skw_base:
+            if skw_scale / 2 >= skw_base:
                 print("invalid skw_scale: ", skw_scale)
                 return
             # 基于正态分布生成zipf分布的参数
-            skw_gen = gfunc.get_truncated_normal(mean=skw_base, sd=skw_sd, low=-skw_scale/2+skw_base, upp=skw_scale/2+skw_base )
+            skw_gen = gfunc.get_truncated_normal(mean=skw_base, sd=skw_sd, low=-skw_scale / 2 + skw_base,
+                                                 upp=skw_scale / 2 + skw_base)
             for i in range(1, fap_cnt + 1):
                 skw_factor = skw_gen.rvs()
                 fap = FAP(i, fap_capacity, skw_factor, plateau, content_cnt)
@@ -59,7 +67,7 @@ class FRANs:
         self.gen_cluster(cluster_size)
 
     def gen_cluster(self, cluster_size):
-        if cluster_size < 2 or cluster_size > self.fap_cnt or cluster_size % 2 == 0 :
+        if cluster_size < 2 or cluster_size > self.fap_cnt or cluster_size % 2 == 0:
             print("invalid cluster_size: ", cluster_size, "\n")
             return
         nxt, pre = int((cluster_size - 1) / 2), int((cluster_size - 1) / 2)
@@ -78,3 +86,68 @@ class FRANs:
                 self.content_threshold_dic[i] = self.delay_threshold[1]
             else:
                 self.content_threshold_dic[i] = self.delay_threshold[2]
+
+    def get_exp_delay(self, srv_type: int):
+        if srv_type == 0:
+            return self.srv_avg_delay[0]
+        if srv_type == 1:
+            return self.srv_avg_delay[0] + self.srv_avg_delay[1]
+        if srv_type == 2:
+            return self.srv_avg_delay[0] + self.srv_avg_delay[1] + self.srv_avg_delay[2]
+
+    def get_realtime_delay(self, srv_type: int):
+        delay_gen = gfunc.get_truncated_normal(mean=self.srv_avg_delay[0],
+                                               sd=1,
+                                               low=self.srv_avg_delay[0] - self.srv_delay_scale,
+                                               upp=self.srv_avg_delay[0] + self.srv_delay_scale)
+        if srv_type == 0:
+            return delay_gen.rvs()
+        if srv_type == 1:
+            return delay_gen.rvs() + self.srv_avg_delay[1]
+        if srv_type == 2:
+            return delay_gen.rvs() + self.srv_avg_delay[1] + self.srv_avg_delay[2]
+
+    # 随机生成产生收到请求的FAP
+    def get_req_fap(self):
+        req_fap_id = np.random.randint(low=1, high=self.fap_cnt + 1, size=1, dtype=int)[0]
+        return self.fap_list[req_fap_id]
+
+    # 基于流行度生成对应fap收到的内容请求
+    def get_req_content(self, fap: FAP):
+        return fap.get_request()
+
+    # 获取全局状态
+    def get_universal_state(self, fap: FAP, req_content_id: int):
+        state = np.array([fap.fap_id, req_content_id])
+        for i in range(1, self.fap_cnt + 1):
+            cache = self.fap_list[i].cache
+            state_fap_i = np.pad(cache, (0, self.fap_capacity-cache.size), 'constant', constant_values=(0, 0))
+            state = np.append(state, state_fap_i)
+        return state
+
+    def get_fap_avg_delay(self, fap: FAP):
+        avg_delay = 0
+        for i in range (1, self.content_cnt+1):
+            srv_type = fap.get_srv_type(i)
+            avg_delay += self.get_exp_delay(srv_type) * fap.pops[i-1]
+        return avg_delay
+
+    def get_cluster_avg_delay(self, fap: FAP):
+        size = self.cluster_size
+        avg_delay = 0
+        avg_delay += 1/size * self.get_fap_avg_delay(fap)
+        for co_fap in fap.co_faplist:
+            avg_delay += 1 / size * self.get_fap_avg_delay(co_fap)
+        return avg_delay
+
+    def get_frans_avg_delay(self):
+        size = self.fap_cnt
+        avg_delay = 0
+        for fap in self.fap_list.values():
+            avg_delay += 1 / size * self.get_fap_avg_delay(fap)
+        return avg_delay
+
+
+
+
+

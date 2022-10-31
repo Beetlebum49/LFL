@@ -26,9 +26,10 @@ skw_sd = 1
 skw_scale = 0.3
 plateau = 0.1
 delay_threshold = (0.7, 1.2, 6.3)
-srv_avg_delay = (0.5, 1, 5)
+srv_avg_delay = (0.5, 0.3, 8)
 
-frans = FRANs(fap_cnt, cluster_size, content_cnt, fap_capacity, is_non_iid, skw_base, skw_sd, skw_scale, plateau, delay_threshold, srv_avg_delay)
+frans = FRANs(fap_cnt, cluster_size, content_cnt, fap_capacity, is_non_iid, skw_base, skw_sd, skw_scale, plateau,
+              delay_threshold, srv_avg_delay)
 print(frans.__dict__, "\n")
 for f in frans.fap_list.values():
     print(f.fap_id, f.co_faplist, "\n")
@@ -41,3 +42,13 @@ while not frans.fap_list[1].is_full():
     step += 1
     frans.fap_list[1].add_content(content)
 print(step, frans.fap_list[1].cache)
+
+fap = frans.get_req_fap()
+content_id = frans.get_req_content(fap)
+
+print(frans.get_universal_state(fap, content_id))
+
+# 测试流行度
+print(fap.pops)
+print(frans.get_fap_avg_delay(fap))
+print(frans.get_frans_avg_delay())

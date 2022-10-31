@@ -21,3 +21,14 @@ def Mzipf(a: np.float64, plateau: np.float64, min: np.uint64, max: np.uint64, si
     p /= np.sum(p)  # normalized
 
     return np.random.choice(v, size=size, replace=True, p=p)
+
+
+def Mzipf_pops(a: np.float64, plateau: np.float64, min: np.uint64, max: np.uint64, size=None):
+    if min == 0:
+        raise ZeroDivisionError("")
+
+    v = np.arange(min, max + 1)  # values to sample
+    np.add(v, plateau)
+    p = 1.0 / np.power(v, a)  # probabilities
+    p /= np.sum(p)  # normalized
+    return p
