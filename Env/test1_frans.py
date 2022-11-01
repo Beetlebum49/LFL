@@ -25,7 +25,7 @@ skw_base = 0.8
 skw_sd = 1
 skw_scale = 0.3
 plateau = 0.1
-delay_threshold = (0.75, 8.65, 10)
+delay_threshold = (0.8, 8.65, 10)
 srv_avg_delay = (0.5, 0.3, 8)
 
 frans = FRANs(fap_cnt, cluster_size, content_cnt, fap_capacity, is_non_iid, skw_base, skw_sd, skw_scale, plateau,
@@ -50,8 +50,15 @@ print(frans.get_universal_state(fap, content_id))
 
 # 测试流行度
 print(fap.pops)
+
+# 测试延迟函数
 print(frans.get_fap_avg_delay(fap))
 print(frans.get_frans_avg_delay())
+
+# 测试超时概率
 print(frans.timeout_probility_array)
+print(frans.get_fap_avg_timeout(fap))
+print(frans.get_fap_avg_timeout(frans.fap_list[1]))
+
 
 

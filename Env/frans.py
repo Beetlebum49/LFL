@@ -26,7 +26,7 @@ class FRANs:
                  srv_avg_delay: tuple):
         self.fap_cnt = fap_cnt
         self.fap_list = dict()
-        self.content_threshold_dic = dict()
+        self.content_delay_threshold_dic = dict()
         self.cluster_size = cluster_size
         self.content_cnt = content_cnt
         self.fap_capacity = fap_capacity
@@ -39,7 +39,7 @@ class FRANs:
         self.srv_avg_delay = srv_avg_delay
 
         #以下后续可以考虑可以再函数入参中配置
-        self.delay_threshold_proportion = (0.15, 0.4)
+        self.delay_threshold_proportion = (0.05, 0.1)
         self.srv_delay_scale = 0.2
         self.delay_sd = 1
 
@@ -95,14 +95,14 @@ class FRANs:
 
     # 随机的为内容分配延迟敏感度的值, 这个是每个内容的固有属性，可以是为环境的值
     def set_contents_delay_threshold(self):
-        for i in range(1, self.fap_capacity + 1):
+        for i in range(1, self.content_cnt + 1):
             a = np.random.rand()
             if a < self.delay_threshold_proportion[0]:
-                self.content_threshold_dic[i] = self.delay_threshold[0]
+                self.content_delay_threshold_dic[i] = self.delay_threshold[0]
             elif a < self.delay_threshold_proportion[1]:
-                self.content_threshold_dic[i] = self.delay_threshold[1]
+                self.content_delay_threshold_dic[i] = self.delay_threshold[1]
             else:
-                self.content_threshold_dic[i] = self.delay_threshold[2]
+                self.content_delay_threshold_dic[i] = self.delay_threshold[2]
 
     def get_exp_delay(self, srv_type: int):
         if srv_type == 0:
@@ -142,6 +142,14 @@ class FRANs:
             state = np.append(state, state_fap_i)
         return state
 
+    # 获取某个文件的延迟门限编号
+    def get_content_delay_threshold_index(self, content_id: int):
+        for index, value in enumerate(self.delay_threshold):
+            if self.content_delay_threshold_dic[content_id] == value:
+                return index
+        return 2
+
+
     '''
     下面定义frans中的延迟函数
     get_fap_avg_delay： 基于单个fap的维度的延迟的期望
@@ -170,6 +178,34 @@ class FRANs:
             avg_delay += 1 / size * self.get_fap_avg_delay(fap)
         return avg_delay
 
+    '''
+       下面定义frans中的超时函数
+       get_fap_avg_timeout： 基于单个fap的维度的请求超时的概率
+       get_cluster_avg_timeout： 基于一个fap所属的簇的请求超时的概率期望
+       get_frans_avg_timeout：全局的请求超时的概率期望
+    '''
+    def get_fap_avg_timeout(self, fap: FAP):
+        timeout_prob = 0
+        for i in range (1, self.content_cnt+1):
+            srv_type = fap.get_srv_type(i)
+            delay_threshold_id = self.get_content_delay_threshold_index(i)
+            timeout_prob += fap.pops[i-1] * self.timeout_probility_array[srv_type][delay_threshold_id]
+        return timeout_prob
+
+    def get_cluster_avg_timeout(self, fap: FAP):
+        size = self.cluster_size
+        timeout_prob = 0
+        timeout_prob += (1 / size) * self.get_fap_avg_timeout(fap)
+        for co_fap in fap.co_faplist:
+            timeout_prob += 1 / size * self.get_fap_avg_timeout(co_fap)
+        return timeout_prob
+
+    def get_frans_avg_timeout(self):
+        size = self.fap_cnt
+        timeout_prob = 0
+        for fap in self.fap_list.values():
+            timeout_prob += 1 / size * self.get_fap_avg_delay(fap)
+        return timeout_prob
 
 
 
