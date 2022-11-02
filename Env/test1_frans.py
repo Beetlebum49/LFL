@@ -41,24 +41,25 @@ while not frans.fap_list[1].is_full():
     content = frans.fap_list[1].get_request()
     step += 1
     frans.fap_list[1].add_content(content)
-print(step, frans.fap_list[1].cache)
+print(step, frans.fap_list[1].cache, "\n")
 
 fap = frans.get_req_fap()
 content_id = frans.get_req_content(fap)
-
-print(frans.get_universal_state(fap, content_id))
+state = frans.get_frans_state(fap, content_id)
+print(np.size(state), "\n")
+print(state, "\n")
 
 # 测试流行度
-print(fap.pops)
+print(fap.pops, "\n")
 
 # 测试延迟函数
-print(frans.get_fap_avg_delay(fap))
-print(frans.get_frans_avg_delay())
+print(frans.get_fap_avg_delay(fap), "\n")
+print(frans.get_frans_avg_delay(), "\n")
 
 # 测试超时概率
-print(frans.timeout_probility_array)
-print(frans.get_fap_avg_timeout(fap))
-print(frans.get_fap_avg_timeout(frans.fap_list[1]))
+print(frans.timeout_probility_array, "\n")
+print(frans.get_fap_avg_timeout(fap), "\n")
+print(frans.get_fap_avg_timeout(frans.fap_list[1]), "\n")
 
 
 
