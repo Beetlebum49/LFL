@@ -1,10 +1,12 @@
 import gym
 import time
-from LFL.ddpg_only.Model.ddpg_model import DDPG
+from ddpg_only.Model.ddpg_model import DDPG
+from Env.env import RLEnv
+import numpy as np
 
 if __name__ == '__main__':
 
-    # hyper parameters
+    # 训练结构的 hyper parameters
     VAR = 3  # control exploration
     MAX_EPISODES = 500
     MAX_EP_STEPS = 200
@@ -18,7 +20,10 @@ if __name__ == '__main__':
     RENDER = False
 
     # train
-    env = gym.make(ENV_NAME)
+
+    '''环境体初始化以及其参数'''
+
+    env =
     env = env.unwrapped
     env.seed(1)
 

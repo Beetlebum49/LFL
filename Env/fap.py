@@ -55,9 +55,9 @@ class FAP:
             print("out of fap cache size")
             return
         action = int(action)
-        if action == self.capacity:
+        if action >= self.capacity:
             return
-        oldContentId = self.cache[action]
+        oldContentId = self.cache[action-1]
         self.cache[action - 1] = content_id
         self.cache_set.add(content_id)
         self.cache_set.remove(oldContentId)
