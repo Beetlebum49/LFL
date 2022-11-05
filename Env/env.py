@@ -91,6 +91,7 @@ class RLEnv(frans.FRANs):
         状态切换到下一个，只是执行了缓存替代的操作
         get_frans_cur_reward: 获取全局frans的奖励值
     '''
+
     def get_frans_cur_reward(self, action, type: int = 0):
         cur_avg_delay = self.get_frans_avg_delay()
         cur_avg_time_out_prob = self.get_frans_avg_timeout()
@@ -125,6 +126,7 @@ class RLEnv(frans.FRANs):
     step_by_fap: fap维度的执行下一步
     
     '''
+
     def step_by_frans(self, action):
         if action < 1:
             action = 1
@@ -143,12 +145,18 @@ class RLEnv(frans.FRANs):
         next_fap_state = self.get_next_fap_cluster_state(fap)
         return next_fap_state, reward
 
-
+    '''step-------------------------------------------------------------------------
+        重置fap中每个cache的缓存和对应的请求，但是不记录对应数据（这种重置是为了训练而设置的，所以记录）
+    '''
+    def reset(self):
+        for f in self.fap_list.values():
+            f.reset()
+        self.cur_req_fap = self.get_req_fap()
+        return self.get_cur_frans_state()
 
     '''工具函数-------------------------------------------------------------------------
     记录、填充，多个其它函数会调用下述函数
     '''
-
     # 填充某个fap缓存，并记录结果
     def fullfill_fap_cache(self, fap: fap.FAP):
         while not fap.is_full():

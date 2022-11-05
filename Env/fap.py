@@ -37,7 +37,7 @@ class FAP:
         return self.cache.size == self.capacity
 
     def add_content(self, content_id: int):
-        # 防御式编程，如果有了，就不需要加了
+        # 如果有了，就不需要加了
         if content_id in self.cache_set:
             return
         if self.cache.size == self.capacity:
@@ -120,6 +120,16 @@ class FAP:
             self.time_out_hits = np.append(self.time_out_hits, 0)
         else:
             self.time_out_hits = np.append(self.time_out_hits, 1)
+
+    # 重置缓存内容和latest_req
+    def reset(self):
+        self.cache = np.zeros(0, dtype=int)
+        while not self.is_full():
+            req_content = self.get_request()
+            self.add_content(req_content)
+        self.latest_req = self.get_request()
+
+
 
 
 
