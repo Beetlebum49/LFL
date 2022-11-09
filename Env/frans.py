@@ -240,7 +240,7 @@ class FRANs:
         size = self.fap_cnt
         timeout_prob = 0
         for fap in self.fap_list.values():
-            timeout_prob += 1 / size * self.get_fap_avg_delay(fap)
+            timeout_prob += 1 / size * self.get_fap_avg_timeout(fap)
         return timeout_prob
 
     '''-------------------------------------------------------------------------------------------------'''

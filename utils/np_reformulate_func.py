@@ -10,5 +10,5 @@ def partition_avg(np_array: np.ndarray, batch_size: int):
     return np.linspace(1, partition_avg_array.size, partition_avg_array.size), partition_avg_array
 
 
-print(partition_avg(np.ones(10),3))
+
 

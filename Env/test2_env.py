@@ -6,8 +6,8 @@ import utils.np_reformulate_func as nrf
 
 fap_cnt = 5
 cluster_size = 3
-content_cnt = 40000
-fap_capacity = 100
+content_cnt = 400
+fap_capacity = 15
 is_non_iid = True
 skw_base = 1.1
 skw_sd = 1
@@ -38,11 +38,17 @@ for i in range(1, rl_env.fap_cnt+1):
 # plt.show()
 
 rewards = np.zeros(0)
-for i in range(1,1000):
+for i in range(1,200):
     action = np.random.rand()*rl_env.fap_capacity + 1
     #rl_env.execute_frans_action(action)
-    rewards = np.append(rewards,rl_env.get_frans_cur_reward(action,0))
-    rl_env.get_next_frans_state()
+    _, r = rl_env.step_by_frans(action)
+    rewards = np.append(rewards,r)
+    # for f in rl_env.fap_list.values():
+    #     print("fap_id:", f.fap_id, " avg_delay: %f", rl_env.get_fap_avg_delay(f))
+    print(r)
+    print(rl_env.get_frans_avg_delay())
+    print(rl_env.get_frans_avg_timeout())
+
     print(i)
 
 x1, y1 = nrf.partition_avg(rl_env.time_slot_delays,40)
@@ -53,11 +59,15 @@ x2, y2 = nrf.partition_avg(rl_env.cache_hits, 40)
 
 x3, y3 = nrf.partition_avg(rl_env.time_out_hits, 100)
 
+x4, y4 = nrf.partition_avg(rewards, 1)
+
 plt.figure()
-plt.subplot(1, 3, 1)
+plt.subplot(1, 4, 1)
 plt.plot(x1, y1)
-plt.subplot(1, 3, 2)
+plt.subplot(1, 4, 2)
 plt.plot(x2, y2)
-plt.subplot(1, 3, 3)
+plt.subplot(1, 4, 3)
 plt.plot(x3, y3)
+plt.subplot(1, 4, 4)
+plt.plot(x4, y4)
 plt.show()

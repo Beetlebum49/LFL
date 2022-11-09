@@ -124,6 +124,7 @@ class FAP:
     # 重置缓存内容和latest_req
     def reset(self):
         self.cache = np.zeros(0, dtype=int)
+        self.cache_set.clear()
         while not self.is_full():
             req_content = self.get_request()
             self.add_content(req_content)

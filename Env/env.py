@@ -32,7 +32,7 @@ class RLEnv(frans.FRANs):
 
     def execute_frans_action(self, action):
         action_index = int(action)
-        executor_fap: fap.FAP = self.cur_req_fap
+        executor_fap = self.cur_req_fap
         executor_fap.replace_content(action_index, executor_fap.latest_req)
 
     def execute_fap_action(self, fap: fap.FAP, action):
@@ -65,8 +65,9 @@ class RLEnv(frans.FRANs):
         return self.get_frans_state(req_fap, req_fap.latest_req)
 
     def get_next_frans_state(self):
-        next_req_fap: fap.FAP = self.get_req_fap()
+        next_req_fap = self.get_req_fap()
         if not next_req_fap.is_full():
+            print("warning, requested fap is not full, id: ", next_req_fap.fap_id)
             self.fullfill_fap_cache(next_req_fap)
         # 定义下一个收到请求的fap和请求的文件编号
         next_req_content = self.get_next_replaceable_content_id(next_req_fap)
@@ -148,10 +149,11 @@ class RLEnv(frans.FRANs):
     '''step-------------------------------------------------------------------------
         重置fap中每个cache的缓存和对应的请求，但是不记录对应数据（这种重置是为了训练而设置的，所以记录）
     '''
-    def reset(self):
-        for f in self.fap_list.values():
-            f.reset()
-        self.cur_req_fap = self.get_req_fap()
+    def reset(self, conf):
+        if conf[0] == 1:
+            for f in self.fap_list.values():
+                f.reset()
+            self.cur_req_fap = self.get_req_fap()
         return self.get_cur_frans_state()
 
     '''工具函数-------------------------------------------------------------------------
