@@ -127,7 +127,7 @@ class FAP:
             self.time_out_hits = np.append(self.time_out_hits, 1)
 
     def set_original_paras(self):
-        self.origional_paras["capicity"] = self.capacity
+        self.origional_paras["capacity"] = self.capacity
         self.origional_paras["st_ep_para"] = 1.1
         self.origional_paras["rate_para"] = 0.6
         self.origional_paras["inc_proportion"] = 0.5
@@ -145,7 +145,7 @@ class FAP:
             return True
 
         paras = self.origional_paras
-        if conf[0] == 0:
+        if conf[0] == 0 or conf[0] == 2:
             self.general_reset()
         if conf[0] == 1:  # linear1
             if not set_fap(self, int(conf[4] / conf[3] * paras["st_ep_para"]), conf[-1],

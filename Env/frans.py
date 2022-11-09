@@ -172,7 +172,8 @@ class FRANs:
             state = np.array([fap.fap_id, req_content_id])
         else:
             state = np.zeros(2)
-        state = np.append(state, np.pad(fap.cache, (0, self.fap_capacity - fap.cache.size), 'constant', constant_values=(0, 0)))
+        state = np.append(state, np.pad(fap.cache, (0, fap.capacity - fap.cache.size), 'constant', constant_values=(0, 0)))
+        state = state[:self.fap_capacity+2]
         return state
 
     def get_cluster_state(self, fap: FAP, req_fap: FAP, req_content_id: int):

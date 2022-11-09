@@ -10,8 +10,8 @@ if __name__ == '__main__':
     '''环境体初始化以及其参数'''
     fap_cnt = 5
     cluster_size = 3
-    content_cnt = 1000
-    fap_capacity = 20
+    content_cnt = 100
+    fap_capacity = 5
     is_non_iid = True
     skw_base = 1.2
     skw_sd = 0.5
@@ -23,7 +23,7 @@ if __name__ == '__main__':
 
     # 训练模型的的 hyper parameters
     VAR = fap_capacity * 0.55 # control exploration
-    MAX_EPISODES = 50
+    MAX_EPISODES = 40
     MAX_EP_STEPS = 1000
     MEMORY_CAPACITY = 20000
     REPLACEMENT = [
