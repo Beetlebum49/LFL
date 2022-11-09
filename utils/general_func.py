@@ -3,6 +3,7 @@ from scipy.stats import truncnorm
 import numpy as np
 
 
+
 def get_truncated_normal(mean=0, sd=1, low=0, upp=10):
     return truncnorm(
         (low - mean) / sd, (upp - mean) / sd, loc=mean, scale=sd)
@@ -44,3 +45,8 @@ def Mzipf_pops(a: np.float64, plateau: np.float64, min: np.uint64, max: np.uint6
     p = 1.0 / np.power(v, a)  # probabilities
     p /= np.sum(p)  # normalized
     return p
+
+
+def reset_size(s, e, index, origin_size, final_size, tp: 0):
+    if tp == 0:
+        return int((index - s) / (e - s) * (final_size - origin_size) + origin_size)

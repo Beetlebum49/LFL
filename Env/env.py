@@ -152,7 +152,7 @@ class RLEnv(frans.FRANs):
     def reset(self, conf):
         if conf[0] == 1:
             for f in self.fap_list.values():
-                f.reset()
+                f.reset(conf)
             self.cur_req_fap = self.get_req_fap()
         return self.get_cur_frans_state()
 

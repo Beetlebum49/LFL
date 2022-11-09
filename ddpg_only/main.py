@@ -3,6 +3,7 @@ from ddpg_only.Model.ddpg_model import DDPG
 from Env.env import RLEnv
 import numpy as np
 import utils.np_reformulate_func as nrf
+import utils.model_tools as tools
 from matplotlib import pyplot as plt
 
 if __name__ == '__main__':
@@ -20,9 +21,9 @@ if __name__ == '__main__':
     srv_avg_delay = (0.5, 0.3, 8)
     reward_para = 0.3
 
-    # 训练结构的 hyper parameters
-    VAR = fap_capacity * 0.55  # control exploration
-    MAX_EPISODES = 250
+    # 训练模型的的 hyper parameters
+    VAR = fap_capacity * 0.55 # control exploration
+    MAX_EPISODES = 50
     MAX_EP_STEPS = 1000
     MEMORY_CAPACITY = 20000
     REPLACEMENT = [
@@ -61,9 +62,13 @@ if __name__ == '__main__':
             #     env.render()
 
             # Add exploration noise
-            a = ddpg.choose_action(s)
-            a = np.clip(np.random.normal(a, VAR), -a_bound, a_bound) # 在动作选择上添加随机噪声
-            real_a = a[0] + a_bound
+            real_a, a = tools.action_gen(1, s, a_bound, VAR, i, MEMORY_CAPACITY, MAX_EP_STEPS, ddpg)
+            # if i >= MEMORY_CAPACITY / MAX_EP_STEPS:
+            #     a = ddpg.choose_action(s)
+            #     a = np.clip(np.random.normal(a, VAR), -a_bound, a_bound) # 在动作选择上添加随机噪声
+            # else: #基于问题特征，在模型训练初期直接使用平均随机
+            #     a = np.random.rand() * a_bound * 2 - a_bound
+            # real_a = a[0] + a_bound
             s_, r = rl_env.step_by_frans(real_a)
             # print('Episode:', i, " Step:", j, "reward: %f" % r)
             # print("_______________\n")
@@ -78,7 +83,7 @@ if __name__ == '__main__':
             if j == MAX_EP_STEPS - 1:
                 print('Episode:', i, ' Reward: %f' % ep_reward, 'Explore: %.2f' % VAR, )
                 reward_records = np.append(reward_records, ep_reward)
-            CONF[]
+            CONF[-1] = i
 
     print('Running time: ', time.time() - t1)
     x1, y1 = nrf.partition_avg(reward_records, 1)

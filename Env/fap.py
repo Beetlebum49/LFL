@@ -33,6 +33,10 @@ class FAP:
         # 记录该fap最近的一次收到的请求的content_id
         self.latest_req = self.get_request()
 
+        # 记录每个fap初始化的值
+        self.origional_paras = dict()
+        self.set_original_paras()
+
     def is_full(self):
         return self.cache.size == self.capacity
 
@@ -52,12 +56,13 @@ class FAP:
         if content_id in self.cache_set:
             return
         if self.cache.size < self.capacity:
-            print("out of fap cache size")
+            print("cache is not full, need just add")
+            self.add_content(content_id)
             return
         action = int(action)
         if action >= self.capacity:
             return
-        oldContentId = self.cache[action-1]
+        oldContentId = self.cache[action - 1]
         self.cache[action - 1] = content_id
         self.cache_set.add(content_id)
         self.cache_set.remove(oldContentId)
@@ -121,16 +126,37 @@ class FAP:
         else:
             self.time_out_hits = np.append(self.time_out_hits, 1)
 
+    def set_original_paras(self):
+        self.origional_paras["capicity"] = self.capacity
+        self.origional_paras["st_ep_para"] = 1.1
+        self.origional_paras["rate_para"] = 0.6
+        self.origional_paras["inc_proportion"] = 0.5
+        self.origional_paras["modifier_type"] = 0
+
     # 重置缓存内容和latest_req
-    def reset(self):
+    def reset(self, conf):
+
+        def set_fap(f: FAP, s_ep, cur_ep, rate_para, inc_proportion, tp):
+            e_ep = int(s_ep * (1 + rate_para))
+            if cur_ep <= s_ep or cur_ep > e_ep:
+                return False
+            final_size = f.origional_paras["capacity"] * (1 + inc_proportion)
+            f.capacity = gfunc.reset_size(s_ep, e_ep, cur_ep, f.origional_paras["capacity"], final_size, tp)
+            return True
+
+        paras = self.origional_paras
+        if conf[0] == 0:
+            self.general_reset()
+        if conf[0] == 1:  # linear1
+            if not set_fap(self, int(conf[4] / conf[3] * paras["st_ep_para"]), conf[-1],
+                           paras["rate_para"], paras["inc_proportion"], paras["modifier_type"]):
+                self.general_reset()
+
+    # CONF = [0, VAR, MAX_EPISODES, MAX_EP_STEPS, MEMORY_CAPACITY, 0]
+    def general_reset(self):
         self.cache = np.zeros(0, dtype=int)
         self.cache_set.clear()
         while not self.is_full():
             req_content = self.get_request()
             self.add_content(req_content)
         self.latest_req = self.get_request()
-
-
-
-
-
